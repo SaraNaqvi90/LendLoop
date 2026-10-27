@@ -26,12 +26,3 @@ export async function consumeHeld(userId, amount, bookingId, session) {
   user.wallet.held -= amount; await user.save({ session });
   await LedgerEntry.create([{ user: userId, booking: bookingId, type: 'damage_deduction', amount, balanceAfter: user.wallet.toObject() }], { session });
 }
-export async function topUp(userId, amount) {
-  const session = await User.startSession();
-  try { let result; await session.withTransaction(async () => {
-    const user = await User.findById(userId).session(session);
-    user.wallet.available += amount; await user.save({ session });
-    const [entry] = await LedgerEntry.create([{ user: userId, type: 'topup', amount, balanceAfter: user.wallet.toObject() }], { session });
-    result = { wallet: user.wallet, entry };
-  }); return result; } finally { await session.endSession(); }
-}

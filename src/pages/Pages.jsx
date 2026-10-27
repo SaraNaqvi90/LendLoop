@@ -54,10 +54,55 @@ export function BookingsPage() {
   return <><PageHeading eyebrow="YOUR LENDING LIFE" title="My bookings" text="Keep track of what you’ve borrowed and shared."/><div className="tab-row">{[['all','Everything'],['borrowing','Borrowing'],['lending','Lending']].map(([k,v])=><button key={k} className={tab===k?'active':''} onClick={()=>setTab(k)}>{v}</button>)}</div><Alert error={error} success={notice}/>{loading?<div className="loading-inline"><span className="spinner"/>Loading bookings…</div>:rows.length?<div className="booking-list">{rows.map(b=>{const isBorrower=String(b.borrower?._id||b.borrower)===String(user._id);return <article className="booking-card" key={b._id}><div className="booking-thumb"><img src={imageFor(b.item||{})} alt=""/></div><div className="booking-main"><div className="booking-title-row"><div><span className="eyebrow">{isBorrower?'BORROWING':'LENDING'}</span><h3>{b.item?.title||'Shared item'}</h3></div><span className={`status status-${b.status}`}>{b.status.replace('_',' ')}</span></div><p>{date(b.startDate)} – {date(b.endDate)} <span>·</span> Deposit {money(b.depositHeld)}</p><div className="booking-actions">{b.status==='requested'&&!isBorrower&&<><button className="button button-primary button-small" onClick={()=>act(b,'approve')}>Approve</button><button className="button button-secondary button-small" onClick={()=>act(b,'reject')}>Decline</button></>}{['requested','approved'].includes(b.status)&&isBorrower&&<button className="button button-secondary button-small" onClick={()=>act(b,'cancel')}>Cancel request</button>}{b.status==='approved'&&!isBorrower&&<button className="button button-primary button-small" onClick={()=>act(b,'pickup')}>Confirm pickup</button>}{['picked_up','overdue'].includes(b.status)&&isBorrower&&<button className="button button-primary button-small" onClick={()=>act(b,'return')}>Confirm return</button>}{b.status==='returned'&&!isBorrower&&<button className="button button-secondary button-small" onClick={()=>act(b,'dispute')}>Raise a dispute</button>}{b.status==='closed'&&<button className="button button-secondary button-small" onClick={()=>act(b,'review')}>Leave a review</button>}{b.status==='disputed'&&user.role==='admin'&&<button className="button button-primary button-small" onClick={()=>act(b,'resolve')}>Resolve dispute</button>}</div></div></article>})}</div>:<div className="empty-state"><span>◌</span><h3>No bookings here yet</h3><p>Your requests and lending activity will show up here.</p><Link className="button button-primary" to="/">Explore items</Link></div>}</>;
 }
 
+function loadRazorpayCheckout() {
+  if (window.Razorpay) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Razorpay Checkout could not be loaded. Check your internet connection and retry.'));
+    document.body.appendChild(script);
+  });
+}
+
 export function WalletPage() {
-  const { value, loading, error }=useLoad(()=>api('/wallet'),[]); const [amount,setAmount]=useState(''); const [success,setSuccess]=useState(''); const [formError,setFormError]=useState('');
-  async function topup(e){e.preventDefault();setFormError('');setSuccess('');try{await api('/wallet/topup',{method:'POST',body:{amount:Number(amount)}});setSuccess(`${money(amount)} added to your mock wallet.`);setAmount('');window.setTimeout(()=>window.location.reload(),600);}catch(e){setFormError(e.message);}}
-  return <><PageHeading eyebrow="YOUR CAMPUS WALLET" title="Wallet & deposits" text="Your mock credits keep deposits simple and transparent."/><Alert error={error||formError} success={success}/>{loading?<div className="loading-inline"><span className="spinner"/>Loading wallet…</div>:<><div className="wallet-grid"><div className="balance-card"><div className="balance-top"><span>AVAILABLE BALANCE</span><span className="wallet-glyph">◈</span></div><strong>{money(value?.wallet?.available)}</strong><p>Ready for your next borrow</p><div className="balance-held">Held in deposits <b>{money(value?.wallet?.held)}</b></div></div><div className="topup-card"><div className="eyebrow">MOCK WALLET TOP-UP</div><h3>Add campus credits</h3><p className="muted">Demo credits only. No payment is processed.</p><form className="topup-form" onSubmit={topup}><span>₹</span><input type="number" min="1" max="10000" required placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)}/><button className="button button-primary">Add credits</button></form><div className="quick-amounts">{[100,250,500].map(a=><button key={a} onClick={()=>setAmount(String(a))}>+{money(a)}</button>)}</div></div></div><section className="ledger-section"><div className="section-title"><div><div className="eyebrow">ACCOUNT ACTIVITY</div><h2>Recent transactions</h2></div></div>{value?.ledger?.length?<div className="ledger-table">{value.ledger.map(e=><div className="ledger-row" key={e._id}><div className="ledger-mark">{e.type==='topup'?'↗':e.type==='deposit_hold'?'⌑':'↙'}</div><div><b>{e.type.replaceAll('_',' ')}</b><small>{date(e.createdAt)}</small></div><strong className={e.type==='deposit_hold'?'negative':'positive'}>{e.type==='deposit_hold'?'−':'+'}{money(e.amount)}</strong></div>)}</div>:<div className="empty-inline">No wallet activity yet.</div>}</section></>}</>;
+  const { value, setValue, loading, error } = useLoad(() => api('/wallet'), []);
+  const { user } = useAuth();
+  const [amount, setAmount] = useState('');
+  const [success, setSuccess] = useState('');
+  const [formError, setFormError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function topup(e) {
+    e.preventDefault(); setFormError(''); setSuccess(''); setBusy(true);
+    try {
+      const order = await api('/wallet/topup/order', { method: 'POST', body: { amount: Number(amount) } });
+      await loadRazorpayCheckout();
+      const checkout = new window.Razorpay({
+        key: order.keyId, amount: order.amount, currency: order.currency,
+        name: order.name, description: order.description, order_id: order.orderId,
+        prefill: { name: user?.name, email: user?.email },
+        theme: { color: '#176b55' },
+        handler: async (payment) => {
+          try {
+            const result = await api('/wallet/topup/verify', { method: 'POST', body: payment });
+            setValue(await api('/wallet'));
+            setSuccess(`${money(result.amount)} was added to your wallet.`);
+            setAmount('');
+            setBusy(false);
+          } catch (verifyError) { setFormError(verifyError.message); setBusy(false); }
+        },
+        modal: { ondismiss: () => setBusy(false) }
+      });
+      checkout.on('payment.failed', (event) => {
+        setFormError(event.error?.description || 'Payment failed. You have not been charged.');
+        setBusy(false);
+      });
+      checkout.open();
+    } catch (e) { setFormError(e.message); setBusy(false); }
+  }
+
+  return <><PageHeading eyebrow="YOUR CAMPUS WALLET" title="Wallet & deposits" text="Add funds securely and track your balance."/><Alert error={error || formError} success={success}/>{loading?<div className="loading-inline"><span className="spinner"/>Loading wallet…</div>:<><div className="wallet-grid"><div className="balance-card"><div className="balance-top"><span>AVAILABLE BALANCE</span><span className="wallet-glyph">◈</span></div><strong>{money(value?.wallet?.available)}</strong><p>Ready for your next borrow</p><div className="balance-held">Held in deposits <b>{money(value?.wallet?.held)}</b></div></div><div className="topup-card"><div className="eyebrow">SECURE WALLET TOP-UP</div><h3>Add funds</h3><p className="muted">Pay securely with Razorpay. Successful payments are added to your wallet.</p><form className="topup-form" onSubmit={topup}><span>₹</span><input type="number" min="1" max="10000" step="1" required placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)} disabled={busy}/><button className="button button-primary" disabled={busy}>{busy?'Opening checkout…':'Continue to payment'}</button></form><div className="quick-amounts">{[100,250,500].map(a=><button type="button" key={a} onClick={()=>setAmount(String(a))} disabled={busy}>+{money(a)}</button>)}</div></div></div><section className="ledger-section"><div className="section-title"><div><div className="eyebrow">ACCOUNT ACTIVITY</div><h2>Recent transactions</h2></div></div>{value?.ledger?.length?<div className="ledger-table">{value.ledger.map(e=>{const debit=["deposit_hold","late_fee_paid","damage_deduction"].includes(e.type);return <div className="ledger-row" key={e._id}><div className="ledger-mark">{e.type==='topup'?'↗':e.type==='deposit_hold'?'⌑':'↙'}</div><div><b>{e.type.replaceAll('_',' ')}</b><small>{date(e.createdAt)}</small></div><strong className={debit?'negative':'positive'}>{debit?'−':'+'}{money(e.amount)}</strong></div>})}</div>:<div className="empty-inline">No wallet activity yet.</div>}</section></>}</>;
 }
 
 export function NotificationsPage() {
@@ -78,3 +123,5 @@ export function AdminPage() {
   async function resolve(b){const outcome=window.prompt('Resolution: owner_favour, borrower_favour, or split');if(!outcome)return;try{await api(`/bookings/${b._id}/resolve`,{method:'PATCH',body:{outcome}});setNote('Dispute resolved. Refresh to see the updated queue.');}catch(e){setNote(e.message);}}
   return <><PageHeading eyebrow="LENDLOOP OPERATIONS" title="Admin dashboard" text="Platform overview and open disputes."/><div className="admin-stats">{[['Members',stats?.users],['Active listings',stats?.items],['Bookings',stats?.bookings],['Open disputes',stats?.openDisputes]].map(([label,val])=><div key={label} className="admin-stat"><small>{label}</small><b>{val??'—'}</b></div>)}</div><section className="ledger-section"><div className="section-title"><div><div className="eyebrow">NEEDS REVIEW</div><h2>Open disputes</h2></div></div><Alert error={error|| (note&&!note.includes('resolved')?note:'')} success={note.includes('resolved')?note:''}/>{loading?<div className="loading-inline"><span className="spinner"/>Loading…</div>:disputes?.length?disputes.map(b=><article className="dispute-card" key={b._id}><div><span className="status status-disputed">open dispute</span><h3>{b.item?.title}</h3><p>{b.dispute?.reason}</p><small>Borrower: {b.borrower?.name} · Owner: {b.owner?.name}</small></div><button className="button button-primary button-small" onClick={()=>resolve(b)}>Resolve</button></article>):<div className="empty-inline">No open disputes. Great work, community.</div>}</section></>;
 }
+
+
