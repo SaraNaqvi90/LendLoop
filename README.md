@@ -283,49 +283,24 @@ Environment variables are used to store database configuration, authentication s
 
 Create a `.env` file in the project root:
 
-```env
-VITE_API_BASE_URL=http://localhost:4000/api/v1
+```powershell
+cd backend
+npm run make-admin -- your-email@college.edu
 ```
 
-### Backend Configuration
+Sign out and back in for the admin role to appear in your access token. Admin pages are available at `/admin`.
 
-Configure the backend environment with the values required by its server and database initialization code.
+## Included flows
 
-Example configuration:
+- Account registration/login with short-lived access JWTs and rotating refresh cookies
+- Browse and search listings, category/hostel filters, item details, and availability calendar
+- Create and manage listings using image URLs
+- Request, approve/reject, cancel, hand over, return, dispute, and resolve bookings
+- Mock wallet top-ups, deposit holds/releases, ledger history, trust score, notifications, and reviews API
+- Admin stats, dispute review, and account bans
 
-```env
-PORT=4000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-```
+The lending API uses MongoDB transactions for multi-record booking and wallet changes. Connect it to an Atlas replica set, not a standalone local MongoDB server. Photo uploads use plain image URLs for now.
 
-These are illustrative variable names; the actual backend variable names must match the application source code.
+## Useful commands
 
-**Security:** Never commit real `.env` files, database passwords, JWT secrets, or API credentials to GitHub.
-
-
-## 10. Future Enhancements
-
-Planned improvements include:
-
-- Interactive availability calendars.
-- Stronger booking conflict prevention with concurrency-safe reservations.
-- Automated return reminders through scheduled jobs.
-- A calculated trust score based on borrowing behavior.
-- Trust-based restrictions for high-value items.
-- Improved dispute resolution for damaged or unreturned items.
-- Campus email verification.
-- Enhanced administrative reporting and analytics.
-- Mobile-responsive improvements and accessibility enhancements.
-
-## 11. Project Impact
-
-LendLoop aims to make hostel life more affordable, convenient, and sustainable by transforming individually owned items into shared community resources.
-
-By reducing unnecessary purchases and providing a structured lending process, the platform encourages collaboration, responsible ownership, and trust among students.
-
-**Borrow More. Buy Less. Build Trust.**
-
----
-
-*Note: Booking conflict handling, automated reminders, reputation calculations, and complete deposit processing require backend verification before being presented as fully tested functionality.*
+From the project root, `npm run build` creates the production frontend in `dist/`. From `backend/`, `npm start` starts the API without nodemon.
