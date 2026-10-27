@@ -1,306 +1,106 @@
-# LendLoop — Borrow More. Buy Less. Build Trust.
+# LendLoop
 
-**A Peer-to-Peer Lending and Borrowing Platform for Hostel Students**
+## Problem Statement
+Students often need items for temporary use but may not want to purchase them. Meanwhile, many students own items that remain unused. Informal lending can also create challenges involving trust, deposits, and returns.
 
-LendLoop is a full-stack web application designed to help students lend and borrow everyday items within their hostel or campus community. It promotes affordability, sustainability, and responsible sharing through item listings, booking management, refundable deposits, notifications, and community trust.
+## Target Users
+College students who want to borrow or lend items within their campus community.
 
----
+## Solution
+LendLoop is a peer-to-peer campus lending platform that allows students to list items, discover available items, request bookings, and manage lending and borrowing through a centralized application.
 
-## 1. Problem Statement
+## Key Features
+- User registration and authentication.
+- Create and browse item listings.
+- Search for items and view their details.
+- Request and manage bookings.
+- Wallet and deposit management.
+- Razorpay payment integration.
+- Booking expiry, overdue tracking, and return processing.
+- Trust scores, reviews, and notifications.
 
-Hostel students frequently need items such as chargers, bicycles, textbooks, cameras, sports equipment, and other everyday essentials for short periods.
+## Tech Stack
+- **Frontend:** React, Vite, CSS
+- **Backend:** Node.js, Express.js
+- **Database:** MongoDB Atlas, Mongoose
+- **Authentication:** JWT, bcryptjs, cookies
+- **Payments:** Razorpay
+- **Security:** Helmet, CORS, express-rate-limit
+- **Background Jobs:** node-cron
+- **Deployment:** Vercel (frontend), Render (backend)
 
-Purchasing these items individually can be expensive and unnecessary, especially when other students already own them but use them infrequently.
+## Architecture
+LendLoop uses a client-server architecture. The React frontend communicates with the Express REST API over HTTP. The backend handles authentication, listings, bookings, wallet operations, and payments, while MongoDB Atlas stores application data. Scheduled background jobs process overdue bookings, expired requests, and returned bookings.
 
-Currently, students often rely on informal WhatsApp groups, personal contacts, or word of mouth to borrow items. These methods introduce several challenges:
-
-- Difficulty finding available items.
-- No centralized system for managing lending requests.
-- Scheduling conflicts when multiple students request the same item.
-- Lack of accountability for damaged or unreturned items.
-- No structured deposit or reputation mechanism.
-- Difficulty tracking borrowing history and return deadlines.
-
-**LendLoop addresses these problems by creating a centralized, community-driven platform for secure and organized peer-to-peer lending.**
-
-## 2. Target Users
-
-LendLoop is primarily designed for:
-
-- **Hostel students:** Students who want to borrow useful items without purchasing them.
-- **Item owners:** Students who want to lend underutilized belongings to others.
-- **Campus communities:** Groups seeking to promote affordable and sustainable resource sharing.
-- **Administrators:** Authorized users responsible for managing and monitoring platform activity.
-
-## 3. Proposed Solution
-
-LendLoop provides a digital platform where students can discover, list, borrow, and manage shared items within their campus community.
-
-Students can browse items by category, view item details and deposit requirements, and initiate borrowing requests.
-
-Item owners can manage their listings and track lending activity. The platform also provides booking management, wallet functionality, notifications, and user profiles.
-
-The system is designed around three principles:
-
-1. **Accessibility:** Make useful items easily discoverable within the student community.
-2. **Accountability:** Encourage responsible borrowing through structured bookings, deposits, and user reputation.
-3. **Sustainability:** Reduce unnecessary purchases by encouraging reuse and resource sharing.
-
-## 4. Key Features
-
-### User Authentication and Authorization
-
-- User registration and login.
-- JWT-based authentication.
-- Protected application routes.
-- Session refresh and logout functionality.
-- Role-based access to administrative pages.
-
-### Item Discovery and Listings
-
-- Browse items shared by students.
-- Search for items using keywords.
-- Filter items by category and hostel.
-- View item descriptions, conditions, and deposit amounts.
-- Create and manage personal item listings.
-
-Supported item categories include electronics, bicycles, books, kitchen equipment, sports equipment, tools, and miscellaneous items.
-
-### Booking Management
-
-- Dedicated booking management interface.
-- Item-specific borrowing workflows.
-- Tracking of borrowing and lending activity.
-- Backend booking service for processing borrowing operations.
-
-The booking system is intended to support date-based availability and prevent conflicting reservations.
-
-### Deposit and Wallet Management
-
-- Display of refundable security deposits.
-- Dedicated wallet interface.
-- Backend wallet service for handling financial records associated with borrowing.
-
-Deposit lifecycle handling, including deductions and refunds, should be validated through backend testing.
-
-### Notifications
-
-- Dedicated notifications page.
-- Backend notification service.
-- Infrastructure for communicating booking-related updates.
-
-Automated return reminders can be integrated with scheduled backend jobs.
-
-### Community Trust and Reputation
-
-LendLoop is designed to encourage responsible sharing through borrower accountability and reputation.
-
-The trust system can consider successful returns, late returns, item condition, and borrowing history when determining eligibility for high-value items.
-
-### User Profile
-
-- View account information.
-- Access user-specific activity.
-- Navigate to personal listings, bookings, and wallet information.
-
-### Administrative Dashboard
-
-- Role-restricted admin interface.
-- Dedicated page for administrative operations.
-- Foundation for monitoring platform activity and managing community operations.
-
----
-
-## 5. Technology Stack
-
-| Layer | Technologies |
-|---|---|
-| Frontend | React.js, JavaScript, HTML5, CSS3 |
-| Frontend tooling | Vite |
-| Routing | React Router |
-| Backend | Node.js, Express.js |
-| Database | MongoDB |
-| Database integration | Mongoose |
-| Authentication | JWT-based authentication |
-| API communication | REST APIs, Fetch API |
-| Development tools | VS Code, Git, GitHub |
-| Database hosting | MongoDB Atlas |
-
-## 6. System Architecture
-
-LendLoop follows a client-server architecture with separate frontend, backend, and database components.
-
-### Architecture Diagram
-
-```text
-             STUDENT / ADMIN
-                    |
-                    v
-            REACT FRONTEND
-          (React + Vite + CSS)
-                    |
-                    v
-             REST API CALLS
-                    |
-                    v
-          NODE.JS + EXPRESS
-                    |
-       +------------+------------+
-       |            |            |
-       v            v            v
- Authentication   Item and     Booking
-    Module        User APIs     Service
-       |            |            |
-       +------------+------------+
-                    |
-             Wallet and
-         Notification Services
-                    |
-                    v
-                MONGOOSE
-                    |
-                    v
-              MONGODB ATLAS
-```
-
-### Frontend Architecture
-
-The frontend is built using React and organized into reusable components, pages, context providers, and API services.
-
-Major components include:
-
-- `App.jsx` — application routes and protected pages.
-- `AuthContext.jsx` — authentication state and session management.
-- `Shell.jsx` — common navigation and application layout.
-- `Pages.jsx` — item browsing, listings, bookings, wallet, notifications, profiles, and admin pages.
-- `api.js` — centralized API requests, authentication headers, and token refresh handling.
-
-### Backend Architecture
-
-The backend uses Node.js and Express with a modular structure.
-
-Major backend directories include:
-
-- `config/` — database and application configuration.
-- `models/` — database schemas.
-- `routes/` — API route definitions.
-- `controllers/` — HTTP request handling.
-- `services/` — application business logic.
-- `middleware/` — authentication, authorization, and request processing.
-- `jobs/` — background task infrastructure.
-- `utils/` — shared utility functions.
-
-The application separates API request handling from business logic to improve maintainability and scalability.
-
-### Database Architecture
-
-MongoDB stores application data associated with users, item listings, bookings, and other platform operations.
-
-Mongoose provides schema-based modeling and database interaction.
-
-The intended data relationships include:
-
-- One user can list multiple items.
-- One item can receive multiple borrowing requests over time.
-- Each booking connects an item owner, borrower, and item.
-- Wallet records represent deposit-related activity.
-- Notifications communicate important account and booking events.
-
-## 7. Local Setup and Installation
+## Local Setup
 
 ### Prerequisites
-
-Ensure the following are installed:
-
 - Node.js and npm
-- Git
-- MongoDB Atlas account or a local MongoDB instance
-- Visual Studio Code or another code editor
+- MongoDB Atlas account and a database configured to support transactions
 
-### Step 1: Clone the Repository
+### Installation
+
+Clone the repository:
 
 ```bash
 git clone https://github.com/SaraNaqvi90/LendLoop.git
 cd LendLoop
 ```
 
-### Step 2: Install Frontend Dependencies
-
-From the project root:
+Install frontend dependencies:
 
 ```bash
 npm install
 ```
 
-### Step 3: Install Backend Dependencies
+Install backend dependencies:
 
 ```bash
 cd backend
 npm install
 ```
 
-### Step 4: Configure Environment Variables
+Create the required environment files using the variable names listed below.
 
-Create the required `.env` files using the environment variable instructions below.
-
-### Step 5: Start the Backend
-
-From the `backend` directory:
+Start the backend:
 
 ```bash
 npm run dev
 ```
 
-Use the start command defined in `backend/package.json` if it differs.
-
-### Step 6: Start the Frontend
-
-Open a second terminal in the project root and run:
+In a separate terminal, from the project root, start the frontend:
 
 ```bash
 npm run dev
 ```
 
-The Vite development server normally runs at:
+Open the local frontend URL printed by Vite, typically `http://localhost:5173`.
 
-```text
-http://localhost:5173
-```
+## Environment Variables
 
-The backend API is configured separately. The frontend defaults to:
+Configure these variables locally in `.env` files as expected by the application. In production, configure them through Vercel and Render dashboards. Do not commit secrets to GitHub.
 
-```text
-http://localhost:4000/api/v1
-```
+| Variable | Purpose |
+|---|---|
+| `MONGO_URI` | MongoDB connection string |
+| `JWT_SECRET` | Secret for signing authentication tokens |
+| `RAZORPAY_KEY_ID` | Razorpay API key ID |
+| `RAZORPAY_KEY_SECRET` | Private Razorpay API secret |
+| `PORT` | Backend port; defaults to `4000` locally |
+| `NODE_ENV` | Application environment |
+| `CLIENT_ORIGIN` | Frontend origin allowed by backend CORS |
+| `ALLOWED_EMAIL_DOMAIN` | Optional allowed email domain |
+| `DEPOSIT_GRACE_HOURS` | Grace period used in late-fee calculations |
+| `DISPUTE_WINDOW_HOURS` | Post-return dispute window |
+| `VITE_API_BASE_URL` | Base URL used by the frontend to call the API |
 
-Ensure the backend is running at the configured address before testing application features.
+For local development, `CLIENT_ORIGIN` is typically `http://localhost:5173` and `VITE_API_BASE_URL` is typically `http://localhost:4000/api/v1`. Use your deployed URLs in production.
 
-## 8. Environment Variables
+## Deployment
 
-Environment variables are used to store database configuration, authentication secrets, and application settings.
+- **Live Application:** https://lendloop-frontend.vercel.app
+- **Backend API:** https://lendloop-api-3cjw.onrender.com
+- **Backend Health Check:** https://lendloop-api-3cjw.onrender.com/health
 
-### Frontend Configuration
+The frontend is deployed on Vercel, the backend on Render, and the database is hosted on MongoDB Atlas.
 
-Create a `.env` file in the project root:
-
-```powershell
-cd backend
-npm run make-admin -- your-email@college.edu
-```
-
-Sign out and back in for the admin role to appear in your access token. Admin pages are available at `/admin`.
-
-## Included flows
-
-- Account registration/login with short-lived access JWTs and rotating refresh cookies
-- Browse and search listings, category/hostel filters, item details, and availability calendar
-- Create and manage listings using image URLs
-- Request, approve/reject, cancel, hand over, return, dispute, and resolve bookings
-- Mock wallet top-ups, deposit holds/releases, ledger history, trust score, notifications, and reviews API
-- Admin stats, dispute review, and account bans
-
-The lending API uses MongoDB transactions for multi-record booking and wallet changes. Connect it to an Atlas replica set, not a standalone local MongoDB server. Photo uploads use plain image URLs for now.
-
-## Useful commands
-
-From the project root, `npm run build` creates the production frontend in `dist/`. From `backend/`, `npm start` starts the API without nodemon.
