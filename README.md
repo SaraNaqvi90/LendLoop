@@ -101,6 +101,7 @@ For local development, `CLIENT_ORIGIN` is typically `http://localhost:5173` and 
 - **Live Application:** https://lendloop-frontend.vercel.app
 - **Backend API:** https://lendloop-api-3cjw.onrender.com
 - **Backend Health Check:** https://lendloop-api-3cjw.onrender.com/health
+- **Demo Video:** https://drive.google.com/file/d/1pPciXSmeKEzBMDIhBDmV2d30CC5v-ljL/view?usp=sharing
 
 The frontend is deployed on Vercel, the backend on Render, and the database is hosted on MongoDB Atlas.
 
