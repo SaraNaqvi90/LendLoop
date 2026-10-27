@@ -1,0 +1,10 @@
+import { Router } from 'express'; import asyncHandler from '../utils/asyncHandler.js'; import { requireAuth, requireAdmin } from '../middleware/auth.js'; import * as auth from '../controllers/auth.controller.js'; import * as api from '../controllers/api.controller.js';
+const r = Router();
+r.post('/auth/register', asyncHandler(auth.register)); r.post('/auth/login', asyncHandler(auth.login)); r.post('/auth/refresh', asyncHandler(auth.refresh)); r.post('/auth/logout', asyncHandler(auth.logout));
+r.get('/items', asyncHandler(api.listItems)); r.get('/items/mine', requireAuth, asyncHandler(api.myItems)); r.get('/items/:id', asyncHandler(api.getItem)); r.get('/items/:id/availability', asyncHandler(api.itemAvailability)); r.post('/items', requireAuth, asyncHandler(api.createItem)); r.patch('/items/:id', requireAuth, asyncHandler(api.updateItem));
+r.post('/bookings', requireAuth, asyncHandler(api.createBooking)); r.get('/bookings/mine', requireAuth, asyncHandler(api.myBookings)); r.patch('/bookings/:id/:action', requireAuth, asyncHandler(api.bookingAction));
+r.get('/users/me', requireAuth, asyncHandler(api.profile)); r.patch('/users/me', requireAuth, asyncHandler(api.updateProfile));
+r.get('/wallet', requireAuth, asyncHandler(api.wallet)); r.post('/wallet/topup', requireAuth, asyncHandler(api.walletTopup));
+r.get('/notifications', requireAuth, asyncHandler(api.notifications)); r.patch('/notifications/:id/read', requireAuth, asyncHandler(api.readNotification)); r.post('/reviews', requireAuth, asyncHandler(api.review));
+r.get('/admin/stats', requireAuth, requireAdmin, asyncHandler(api.adminStats)); r.get('/admin/disputes', requireAuth, requireAdmin, asyncHandler(api.adminDisputes)); r.patch('/admin/users/:id/ban', requireAuth, requireAdmin, asyncHandler(api.adminUsers));
+export default r;
